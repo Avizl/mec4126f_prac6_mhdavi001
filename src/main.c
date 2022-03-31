@@ -1,69 +1,91 @@
-/*
- * This file is part of the µOS++ distribution.
- *   (https://github.com/micro-os-plus)
- * Copyright (c) 2014 Liviu Ionescu.
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom
- * the Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
+// Description
+/* MHDAVI001 prac 6*/
 
-// ----------------------------------------------------------------------------
 
+// DEFINES AND INCLUDES
+
+#define STM32F051												   //COMPULSORY
+#include "stm32f0xx.h"											   //COMPULSORY
+#include "lcd_stm32f0.h"
+#include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include "diag/trace.h"
 
-// ----------------------------------------------------------------------------
-//
-// Standalone STM32F0 empty sample (trace via DEBUG).
-//
-// Trace support is enabled by adding the TRACE macro definition.
-// By default the trace messages are forwarded to the DEBUG output,
-// but can be rerouted to any device or completely suppressed, by
-// changing the definitions required in system/src/diag/trace-impl.c
-// (currently OS_USE_TRACE_ITM, OS_USE_TRACE_SEMIHOSTING_DEBUG/_STDOUT).
-//
 
-// ----- main() ---------------------------------------------------------------
+void main(void);                                                   //COMPULSORY
+void display_on_LCD(uint8_t num);
+void display_on_LEDs(uint8_t num);
+void init_LEDSs(void);
+void init_external_interrupts(void);
 
-// Sample pragmas to cope with warnings. Please note the related line at
-// the end of this function, used to pop the compiler diagnostics status.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wmissing-declarations"
-#pragma GCC diagnostic ignored "-Wreturn-type"
 
-int
-main(int argc, char* argv[])
+// MAIN FUNCTION -------------------------------------------------------------|
+
+void main(void)
 {
-  // At this stage the system clock should have already been configured
-  // at high speed.
+	//init_LEDs();
+	//init_switches();
+	init_LCD();
 
-  // Infinite loop
-  while (1)
-    {
-       // Add your code here.
-    }
+
+	while(1)
+	{
+		uint8_t count=0;
+		for (count=0;count<=255;count++)
+		{
+			if (GPIOA->PUPDR |= GPIO_PUPDR_PUPDR1_1)
+			{
+				display_on_LCD(count);
+				display_on_LEDs(count);
+				delay(250000);
+			}
+
+			else if (GPIOA->PUPDR |= GPIO_PUPDR_PUPDR2_1)
+			{
+				lcd_command(CLEAR);
+				display_on_LCD(count);
+				display_on_LEDs(count);
+				delay(250000);
+			}
+		}
+	}
 }
 
-#pragma GCC diagnostic pop
+// OTHER FUNCTIONS -----------------------------------------------------------|
 
-// ----------------------------------------------------------------------------
+void display_on_LCD(uint8_t num)
+
+{
+	char lcd_output[30];
+		sprintf(lcd_output, "%d", num);
+		lcd_command(CLEAR);
+		lcd_putstring(lcd_output);
+}
+
+void init_LEDs(void)
+{
+	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
+	GPIOB->MODER |= GPIO_MODER_MODER0_0;
+	GPIOB->MODER |= GPIO_MODER_MODER1_0;
+	GPIOB->MODER |= GPIO_MODER_MODER2_0;
+	GPIOB->MODER |= GPIO_MODER_MODER3_0;
+	GPIOB->MODER |= GPIO_MODER_MODER4_0;
+	GPIOB->MODER |= GPIO_MODER_MODER5_0;
+	GPIOB->MODER |= GPIO_MODER_MODER6_0;
+	GPIOB->MODER |= GPIO_MODER_MODER7_0;
+}
+
+void display_on_LEDs(uint8_t num)
+{
+	GPIOB->ODR = num;
+}
+
+void init_switches(void)
+{
+	GPIOA->MODER &= ~GPIO_MODER_MODER1;
+	GPIOA->MODER &= ~GPIO_MODER_MODER2;
+	GPIOA->MODER &= ~GPIO_MODER_MODER3;
+
+	GPIOA->PUPDR |=GPIO_PUPDR_PUPDR1_0;
+	GPIOA->PUPDR |=GPIO_PUPDR_PUPDR2_0;
+	GPIOA->PUPDR |=GPIO_PUPDR_PUPDR3_0;
+}
